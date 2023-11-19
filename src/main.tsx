@@ -5,15 +5,15 @@ import {
   RouterProvider,
   createBrowserRouter,
 } from "react-router-dom";
-import LandingPage from "./pages/LandingPage.tsx";
 import FightsPage from "./pages/FightsPage.tsx";
 import TeamsPage from "./pages/TeamsPage.tsx";
-import { TeamsDataProvider } from "./components/TeamsDataProvider.tsx";
+import CompetitorPage from "./pages/CompetitorPage.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: <CompetitorPage />,
     errorElement: <Navigate to="/" />,
   },
   {
@@ -24,9 +24,11 @@ const router = createBrowserRouter([
     path: "/teams",
     element: <TeamsPage />,
   },
+  {
+    path: "/admin",
+    element: <Admin />,
+  }
 ]);
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <TeamsDataProvider>
     <RouterProvider router={router} />
-  </TeamsDataProvider>
 );

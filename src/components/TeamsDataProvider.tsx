@@ -1,8 +1,10 @@
 import { createContext, PropsWithChildren, useEffect, useState } from "react";
 
+
 interface ITeamsContext {
   teamsData: Team[];
   fightQueueItems: FightQueueItem[];
+  teamNames: string[];
 
   addTeamName: (teamName: string) => void;
   addFightToQueue: (item: FightQueueItem) => void;
@@ -53,8 +55,8 @@ const TeamsDataProvider = ({ children }: PropsWithChildren) => {
     teamsData,
     fightQueueItems,
     addFightToQueue,
-
     addTeamName,
+    teamNames: []
   };
 
   return (
