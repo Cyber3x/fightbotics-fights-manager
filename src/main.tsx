@@ -8,27 +8,43 @@ import {
 import FightsPage from "./pages/FightsPage.tsx";
 import TeamsPage from "./pages/TeamsPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
-import Admin from "./pages/Admin.tsx";
+import Admin from "./pages/AdminLoginPage.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import LandingPage from "./pages/LandingPage.tsx";
+// import LandingPage from "./pages/LandingPage.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <CompetitorPage />,
+    element: <LandingPage />,
     errorElement: <Navigate to="/" />,
   },
   {
+    path: "/team",
+    element: <CompetitorPage />,
+  },
+  {
     path: "/fights",
-    element: <FightsPage />,
+    element: (
+      <ProtectedRoute>
+        <FightsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/teams",
-    element: <TeamsPage />,
+    element: (
+      <ProtectedRoute>
+        <TeamsPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/admin",
     element: <Admin />,
-  }
+  },
 ]);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
-    <RouterProvider router={router} />
+  <RouterProvider router={router} />
 );

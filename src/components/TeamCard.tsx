@@ -1,32 +1,22 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "../lib/utils";
-import { ref, onValue, update, remove } from "firebase/database";
+import { ref, onValue, update } from "firebase/database";
 import { database } from "../lib/firebase";
+import { Team } from "../pages/FightsPage";
+import { DEAFULT_REAPIR_TIME } from "../constants";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { Pause, Play, TimerReset } from "lucide-react";
+
+dayjs.extend(duration);
 
 interface IProps {
-  teamName: string;
+  team: Team;
+  isViewOnly?: boolean;
 }
 
-interface Teams {
-  id: string;
-  name: string;
-  opponentName: string;
-  timeLeft: number;
-  timerCheck: boolean;
-  isReady: boolean;
-  opId: number;
-  password: string;
-}
-const TeamCard = ({ teamName }: IProps) => {
-  const [currTeam, setCurrTeam] = useState<Teams>();
+const TeamCard = ({ team, isViewOnly }: IProps) => {
   const timeoutId = useRef<number | undefined>(undefined);
-  const [timer, setTimer] = useState(currTeam?.timeLeft ?? 1200);
-  const [timerCheck, setTimerCheck] = useState<boolean>(
-    currTeam?.timerCheck ?? false
-  );
-  const [gumb, setGumb] = useState("Start");
-  const [teams, setTeams] = useState<Teams[]>([]);
-  const [opponentName, setOpponentName] = useState("");
 
   /**
    * Updates the timer value in the teams database.
@@ -37,35 +27,24 @@ const TeamCard = ({ teamName }: IProps) => {
    * @return {Promise<void>} Returns a promise that resolves when the timer value is updated in the database, or rejects with an error if an error occurs.
    */
   const countTimer = useCallback(async () => {
-    if (timer <= 0) {
-      try {
-        await update(ref(database, "teams/" + teamName), {
+    try {
+      if (team.timeLeft <= 1) {
+        await update(ref(database, "teams/" + team.name), {
           timeLeft: 0,
-          timerCheck: false,
-          isReady: true
+          isTimerRunning: false,
+          isReady: true,
         });
-      } catch (error) {
-        console.error("Error creating opponent:", error);
+      } else {
+        await update(ref(database, "teams/" + team.name), {
+          timeLeft: team.timeLeft - 1,
+        });
       }
-    } else {
-      await update(ref(database, "teams/" + teamName), { timeLeft: timer - 1 });
+    } catch (error) {
+      console.error(
+        `Error in countdown function of team ${team.name}: ${error}`
+      );
     }
-  }, [timer, teamName]);
-
-  /**
-   * Converts the given total seconds into minutes and seconds.
-   *
-   * @param {number} totalSeconds - The total number of seconds.
-   * @return {object} An object containing the minutes and seconds.
-   */
-  const timerMmSs = (totalSeconds: number) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return {
-      minutes: minutes,
-      seconds: seconds,
-    };
-  };
+  }, [team]);
 
   /**
    * Adds or subtracts the timer value based on the 'add' parameter.
@@ -75,56 +54,64 @@ const TeamCard = ({ teamName }: IProps) => {
    * @return {Promise<void>} A promise that resolves when the timer value is updated in the database.
    */
   const addOrSubstractTimer = async (add: boolean) => {
-    if (add) {
-      try {
-        await update(ref(database, "teams/" + teamName), { isReady: false, timeLeft: timer + 60 });
-      } catch (error) {
-        console.error("Error creating opponent:", error);
-      }
-    } else {
-      if (timer <= 60) {
-        await update(ref(database, "teams/" + teamName), { timeLeft: 5 });
-      }
-      else {
-        await update(ref(database, "teams/" + teamName), { timeLeft: timer - 60 });
-      }
-
-    }
-  }
-
-
-  /**
-   * Updates the timer check value in the teams database.
-   *
-   * @param {boolean} check - The new value for the timer check.
-   * @return {Promise<void>} - A promise that resolves when the update is complete.
-   */
-  const timerCheckUpdate = async (check: boolean) => {
     try {
-      await update(ref(database, "teams/" + teamName), { timerCheck: check });
+      await update(ref(database, "teams/" + team.name), {
+        isReady: false,
+        isTimerRunning: false,
+        timeLeft: add
+          ? // adding
+            team.timeLeft === 5
+            ? 60
+            : team.timeLeft + 60
+          : // substracting
+          team.timeLeft <= 60
+          ? 5
+          : team.timeLeft - 60,
+      });
     } catch (error) {
-      console.error("Error creating opponent:", error);
+      console.error(
+        `error while ${add ? "adding" : "substracting"} time from ${
+          team.name
+        }: `,
+        error
+      );
     }
   };
 
-
   /**
-   * Resets the button.
+   * Updates in DB if the timer for this team is running.
    *
-   * @return {Promise<void>} A promise that resolves when the button is reset.
+   * @param {boolean} isTimerRunning - The new value for the isTimerRunning.
+   * @return {Promise<void>} - A promise that resolves when the update is complete.
    */
-  const resetButton = async () => {
+  const toggleIsTimerRunning = async () => {
+    if (team.timeLeft == 0 && !team.isTimerRunning) return;
+
     try {
-      await update(ref(database, "teams/" + teamName), {
-        timeLeft: 1200,
-        timerCheck: false,
-        isReady: false
+      await update(ref(database, "teams/" + team.name), {
+        isTimerRunning: !team.isTimerRunning,
       });
     } catch (error) {
       console.error("Error creating opponent:", error);
     }
   };
 
+  /**
+   * Resets the button.
+   *
+   * @return {Promise<void>} A promise that resolves when the button is reset.
+   */
+  const handleResetButtonClick = async () => {
+    try {
+      await update(ref(database, "teams/" + team.name), {
+        timeLeft: DEAFULT_REAPIR_TIME,
+        isTimerRunning: false,
+        isReady: false,
+      });
+    } catch (error) {
+      console.error("Error creating opponent:", error);
+    }
+  };
 
   /**
    * Handles the opponent for the given opponent name.
@@ -132,160 +119,134 @@ const TeamCard = ({ teamName }: IProps) => {
    * @param {string} opName - The name of the opponent.
    * @return {Promise<void>} A promise that resolves when the opponent is handled.
    */
-  const handleOpponent = async (opName: string) => {
+  const handleChangeOpponent = async (newOpponentName: string) => {
     try {
-      await update(ref(database, "teams/" + opName), {
-        opponentName: teamName,
-        opId: 2
+      await update(ref(database, "teams/" + team.name), {
+        opponentName: newOpponentName,
       });
-      await update(ref(database, "teams/" + teamName), {
-        opponentName: opName,
-        opId: 1
-      });
-    } catch (error) {
-      console.error("Error creating opponent:", error);
-    }
-  };
-
-
-  /**
-   * Removes a team from the database.
-   *
-   * @param {string} teamName - The name of the team to be removed.
-   * @return {Promise<void>} Returns a promise that resolves when the team is successfully removed, or rejects with an error if an error occurs.
-   */
-  const removeTeam = async () => {
-    try {
-      await remove(ref(database, "teams/" + teamName));
     } catch (error) {
       console.error("Error creating opponent:", error);
     }
   };
 
   useEffect(() => {
-    if (timerCheck) {
-      setGumb("Pause");
+    if (team.isTimerRunning) {
       timeoutId.current = window.setTimeout(countTimer, 1000);
       return () => window.clearTimeout(timeoutId.current);
-    } else {
-      setGumb("Start");
     }
-    const teamsRef = ref(database, "teams");
-    onValue(teamsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const fetchedTeams = Object.keys(data).map((id) => ({
-          id,
-          ...data[id],
-        }));
-        setTeams(fetchedTeams);
-        fetchedTeams.forEach((team) => {
-          if (team.name === teamName) {
-            setCurrTeam(team);
-            setTimerCheck(team.timerCheck);
-            setTimer(team.timeLeft);
-            setOpponentName(team.opponentName);
-            console.log("fetched");
-          }
-        });
-      }
-    });
-  }, [timer, countTimer, timerCheck, teamName]);
+  }, [countTimer, team.isTimerRunning, team]);
 
   return (
     <div
       className={cn(
-        "bg-white shadow-md p-6 border-4 w-[20rem] box-border border-transparent",
-        (timer === 0 || currTeam?.isReady) && "border-green-500"
+        "bg-white shadow-md p-6 border-[5px] w-[20rem] box-border border-transparent",
+        (team.timeLeft === 0 || team.isReady) && "border-green-700"
       )}
     >
-      <h1 className="text-center text-4xl mb-4">{teamName}</h1>
-      <h1 className="text-center text-2xl mb-4">{currTeam?.password}</h1>
-      <p className="text-blue-800 uppercase font-bold text-lg opacity-80">
+      <h1
+        className={cn(
+          "text-center line-clamp-1 mb-2",
+          team.name.length < 18
+            ? "text-3xl"
+            : "text-md mb-3 hover:line-clamp-none hover:whitespace-nowrap"
+        )}
+      >
+        {team.name || "marko"}
+      </h1>
+
+      {/* TIME LEFT */}
+      <p className="text-blue-500 uppercase font-semibold text-md opacity-80">
         REPAIR TIME LEFT
       </p>
       <div className="flex justify-between items-center mb-4">
-        <p className="text-5xl text-gray-700 w-full">
-          {timerMmSs(Number(timer)).minutes < 10
-            ? "0" + timerMmSs(Number(timer)).minutes
-            : timerMmSs(Number(timer)).minutes}
-          :
-          {timerMmSs(Number(timer)).seconds < 10
-            ? "0" + timerMmSs(Number(timer)).seconds
-            : timerMmSs(Number(timer)).seconds}
+        <p
+          className={cn(
+            "text-5xl w-full",
+            team.isTimerRunning || isViewOnly
+              ? "text-gray-700"
+              : "text-gray-400"
+          )}
+        >
+          {dayjs.duration(team.timeLeft, "s").format("mm:ss")}
         </p>
-        <button
-          className=
-          "h-10 aspect-square text-white rounded-sm font-black ml-4 bg-blue-700"
-          onClick={() => addOrSubstractTimer(true)}
-        >
-          +
-        </button>
-        <button
-          className=
-          "h-10 aspect-square text-white rounded-sm font-black ml-4 bg-red-700"
-          onClick={() => addOrSubstractTimer(false)}
-        >
-          -
-        </button>
+        {!isViewOnly && (
+          <div className="flex space-x-4">
+            <button
+              className="h-10 aspect-square text-4xl rounded-sm bg-green-400"
+              onClick={() => addOrSubstractTimer(true)}
+            >
+              +
+            </button>
+            <button
+              className="h-10 aspect-square text-4xl rounded-sm bg-red-400"
+              onClick={() => addOrSubstractTimer(false)}
+            >
+              -
+            </button>
+          </div>
+        )}
       </div>
-      <div className="flex justify-between items-center mb-4">
-        <button
-          className={cn(
-            "h-10 aspect-square text-white rounded-sm font-black ml-4",
-            !timerCheck ? "bg-red-700" : "bg-green-600"
-          )}
-          onClick={() => timerCheckUpdate(!timerCheck)}
-        >
-          {gumb}
-        </button>
-        <button
-          className={cn(
-            "h-10 aspect-square text-white rounded-sm font-black ml-4 bg-yellow-400"
-          )}
-          onClick={() => resetButton()}
-        >
-          Reset
-        </button>
-      </div>
-      {opponentName === "" ? (
-        <p className="text-red-800 uppercase font-bold text-lg opacity-80">
+
+      {/* PLAY|PAUSE AND RESET BUTTONS */}
+      {!isViewOnly && (
+        <div className="flex justify-between items-center space-x-4">
+          <button
+            className={cn(
+              "h-10 aspect-square rounded-sm",
+              team.isTimerRunning ? "bg-red-400" : "bg-green-400"
+            )}
+            onClick={toggleIsTimerRunning}
+          >
+            {team.isTimerRunning ? (
+              <Pause className="mx-auto" />
+            ) : (
+              <Play className="mx-auto" />
+            )}
+          </button>
+          <button
+            className="h-10 aspect-square rounded-sm bg-yellow-400"
+            onClick={handleResetButtonClick}
+          >
+            <TimerReset className="mx-auto" />
+          </button>
+        </div>
+      )}
+
+      {/* NEXT OPPONENT */}
+      {/* <div>
+        <p className="text-red-400 uppercase font-semibold text-md opacity-80">
           NEXT OPPONENT
         </p>
-      ) : null}
-      {opponentName === "" ? (
-        <select
-          className="p-2 w-full bg-gray-200 italic text-xl text-gray-700"
-          value={opponentName}
-          onChange={(e) => handleOpponent(e.target.value)}
-        >
-          <option disabled value="">
-            Select next opponent
-          </option>
-          {teams.map((team) => {
-            if (team.opId == 0 && team.name !== teamName) {
-              return (
-                <option value={team.name}>{team.name}</option>
-              )
-            }
-          })}
-        </select>
-      ) : null}
-
-      <p className="text-blue-800 uppercase font-bold text-lg opacity-80">
-        CURRENT OPPONENT
-      </p>
-      <p className="text-black-400 font-bold text-lg opacity-80">
-        {opponentName}
-      </p>
-      <div>
-        <button
-          className="text-center text-4xl mb-4 text-red-800"
-          onClick={() => removeTeam()}
-        >
-          REMOVE TEAM
-        </button>
-      </div>
+        {isViewOnly ? (
+          <p
+            className={cn(
+              "p-2 w-full bg-gray-200 text-xl text-gray-700",
+              team.opponentName ? "" : "italic text-gray-400"
+            )}
+          >
+            {team.opponentName || "Currently unknown"}
+          </p>
+        ) : (
+          <select
+            className="p-2 w-full bg-gray-200 italic text-xl text-gray-700"
+            value={team.opponentName}
+            onChange={(e) => handleChangeOpponent(e.target.value)}
+          >
+            <option disabled value="">
+              Select next opponent
+            </option>
+            {teams.map((otherTeam) => {
+              if (otherTeam.name !== team.name) {
+                return (
+                  <option key={otherTeam.name} value={otherTeam.name}>
+                    {otherTeam.name}
+                  </option>
+                );
+              }
+            })}
+          </select>
+        )}
+      </div> */}
     </div>
   );
 };
