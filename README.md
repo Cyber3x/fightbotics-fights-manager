@@ -1,4 +1,4 @@
-# React + TypeScript + Vite
+# React + TypeScript + Vite + Firebase + Love <3
 
 # Installation and running
 
