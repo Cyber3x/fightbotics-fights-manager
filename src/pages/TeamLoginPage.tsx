@@ -32,9 +32,11 @@ const TeamLoginPage = () => {
   }
 
   return (
-    <div className="bg-gray-100 pt-52 h-screen">
-      <div className="bg-white w-[30rem] mx-auto p-12 space-y-8 rounded-sm shadow-md">
-        <h1 className="text-center text-4xl text-gray-500">Team Login</h1>
+    <div className="lg:bg-gray-100 pt-52 h-screen">
+      <div className="bg-white lg:w-[30rem] lg:mx-auto p-12 space-y-8 rounded-sm lg:shadow-md">
+        <h1 className="text-center lg:text-4xl sm:text-3xl text-2xl text-gray-500">
+          Team Login
+        </h1>
         <form className="space-y-4">
           <div className="flex flex-col space-y-2 items-start mb-4">
             <label htmlFor="team-name" className="text-gray-600 font-semibold">
