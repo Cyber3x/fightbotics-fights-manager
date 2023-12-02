@@ -27,12 +27,12 @@ const TeamPage = () => {
   }
 
   return (
-    <div className="pt-8 h-screen bg-gray-200">
-      <div className="p-8 w-1/2 mx-auto bg-white flex flex-col items-center shadow-md">
-        <div className="flex justify-center relative w-full items-center">
+    <div className="lg:pt-8 h-screen bg-gray-200">
+      <div className="lg:p-8 lg:w-1/2 mx-auto mt-12 h-full lg:h-min bg-white flex flex-col items-center shadow-md">
+        <div className="flex justify-center relative w-full items-center flex-col lg:flex-row">
           <h1 className="text-4xl">{team.name}</h1>
           <button
-            className="underline text-lg text-green-600 my-4 absolute right-0"
+            className="border-2 border-red-600 text-red-600 py-1 px-4 my-4 lg:absolute lg:right-0 lg:text-lg"
             onClick={handleLogout}
           >
             Logout
@@ -41,12 +41,17 @@ const TeamPage = () => {
         <p className="text-blue-500 uppercase font-semibold text-md opacity-80 mt-8">
           REPAIR time left
         </p>
-        <h1 className={cn("text-8xl", team.isTimerRunning && "text-red-600")}>
+        <h1
+          className={cn(
+            "text-6xl sm:text-8xl",
+            team.isTimerRunning && "text-red-600"
+          )}
+        >
           {dayjs.duration(team.timeLeft, "s").format("mm:ss")}
         </h1>
         <button
           className={cn(
-            "h-12 rounded-sm font-black mt-8 bg-red-700 text-white w-1/4",
+            "h-12 rounded-sm font-black mt-8 bg-red-700 text-white lg:w-1/4 px-4",
             team.isReady ? "bg-red-500" : "bg-green-500",
             team.timeLeft === 0 && "bg-gray-400 text-gray-100 cursor-default"
           )}

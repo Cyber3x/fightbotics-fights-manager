@@ -160,7 +160,7 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
   return (
     <div
       className={cn(
-        "bg-white shadow-md p-6 border-[5px] w-[20rem] box-border border-transparent",
+        "bg-white shadow-md p-6 border-[6px] w-[20rem] box-border border-transparent",
         (team.timeLeft === 0 || team.isReady) && "border-green-700"
       )}
     >
@@ -180,7 +180,12 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
         REPAIR TIME LEFT
       </p>
       <div className="flex justify-between items-center mb-4">
-        <p className={cn("text-5xl w-full text-gray-700")}>
+        <p
+          className={cn(
+            "text-5xl w-full text-gray-700",
+            team.timeLeft === 0 && "text-red-600"
+          )}
+        >
           {dayjs.duration(team.timeLeft, "s").format("mm:ss")}
         </p>
         {!isViewOnly && (
