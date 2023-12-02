@@ -1,35 +1,20 @@
-import { useEffect, useState } from "react";
-import { onValue, ref, remove, set } from "firebase/database";
-import { auth, database } from "../lib/firebase";
-import { Link, useNavigate } from "react-router-dom";
-import { Team } from "./FightsPage";
-import { generateRandomString } from "../lib/utils";
+import { ref, remove, set } from "firebase/database";
+import { useState } from "react";
 import { useSignOut } from "react-firebase-hooks/auth";
+import { Link, useNavigate } from "react-router-dom";
 import ErrorMessage from "../components/ErrorMessage";
+import { useTeams } from "../components/teams/TeamsProvider";
+import { auth, database } from "../lib/firebase";
+import { generateRandomString } from "../lib/utils";
+import { Team } from "./FightsPage";
 
 const TeamsPage = () => {
   const [newTeamName, setNewTeamName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [teams, setTeams] = useState<Team[]>([]);
+  const { teams } = useTeams();
   const [signOut] = useSignOut(auth);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    async function fetchTeams() {
-      const teamsRef = ref(database, "teams");
-
-      onValue(teamsRef, (snapshot) => {
-        const data = snapshot.val();
-
-        if (data) {
-          setTeams(Object.values(data));
-        }
-      });
-    }
-
-    fetchTeams();
-  }, []);
 
   /**
    * Removes a team from the database.

@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { cn } from "../lib/utils";
-import { ref, onValue, update } from "firebase/database";
-import { database } from "../lib/firebase";
-import { Team } from "../pages/FightsPage";
-import { DEAFULT_REAPIR_TIME } from "../constants";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { ref, update } from "firebase/database";
 import { Pause, Play, TimerReset } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { DEAFULT_REAPIR_TIME } from "../constants";
+import { database } from "../lib/firebase";
+import { cn } from "../lib/utils";
+import { Team } from "../pages/FightsPage";
 
 dayjs.extend(duration);
 
@@ -16,7 +16,7 @@ interface IProps {
 }
 
 const TeamCard = ({ team, isViewOnly }: IProps) => {
-  const timeoutId = useRef<number | undefined>(undefined);
+  // const timeoutId = useRef<number | undefined>(undefined);
 
   /**
    * Updates the timer value in the teams database.
@@ -44,7 +44,7 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
         `Error in countdown function of team ${team.name}: ${error}`
       );
     }
-  }, [team]);
+  }, [team.timeLeft, team.name]);
 
   /**
    * Adds or subtracts the timer value based on the 'add' parameter.
@@ -53,20 +53,41 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
    *                        If false, the timer value is decreased by 60 seconds.
    * @return {Promise<void>} A promise that resolves when the timer value is updated in the database.
    */
-  const addOrSubstractTimer = async (add: boolean) => {
+  const addOrSubstractTimer = async (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    add: boolean
+  ) => {
+    const { timeLeft } = team;
+    let newTime;
+    if (add) {
+      if (timeLeft === 5) {
+        newTime = 60;
+      } else {
+        if (e.ctrlKey) {
+          newTime = timeLeft + 1;
+        } else {
+          newTime = timeLeft + 60;
+        }
+      }
+    } else {
+      if (e.ctrlKey) {
+        if (timeLeft > 5) {
+          newTime = timeLeft - 1;
+        }
+      } else {
+        if (timeLeft <= 60) {
+          newTime = 5;
+        } else {
+          newTime = timeLeft - 60;
+        }
+      }
+    }
+
     try {
       await update(ref(database, "teams/" + team.name), {
         isReady: false,
         isTimerRunning: false,
-        timeLeft: add
-          ? // adding
-            team.timeLeft === 5
-            ? 60
-            : team.timeLeft + 60
-          : // substracting
-          team.timeLeft <= 60
-          ? 5
-          : team.timeLeft - 60,
+        timeLeft: newTime,
       });
     } catch (error) {
       console.error(
@@ -119,22 +140,22 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
    * @param {string} opName - The name of the opponent.
    * @return {Promise<void>} A promise that resolves when the opponent is handled.
    */
-  const handleChangeOpponent = async (newOpponentName: string) => {
-    try {
-      await update(ref(database, "teams/" + team.name), {
-        opponentName: newOpponentName,
-      });
-    } catch (error) {
-      console.error("Error creating opponent:", error);
-    }
-  };
+  // const handleChangeOpponent = async (newOpponentName: string) => {
+  //   try {
+  //     await update(ref(database, "teams/" + team.name), {
+  //       opponentName: newOpponentName,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error creating opponent:", error);
+  //   }
+  // };
 
   useEffect(() => {
     if (team.isTimerRunning) {
-      timeoutId.current = window.setTimeout(countTimer, 1000);
-      return () => window.clearTimeout(timeoutId.current);
+      const timeout = setInterval(countTimer, 1000);
+      return () => clearTimeout(timeout);
     }
-  }, [countTimer, team.isTimerRunning, team]);
+  }, [countTimer, team.isTimerRunning]);
 
   return (
     <div
@@ -151,7 +172,7 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
             : "text-md mb-3 hover:line-clamp-none hover:whitespace-nowrap"
         )}
       >
-        {team.name || "marko"}
+        {team.name}
       </h1>
 
       {/* TIME LEFT */}
@@ -159,27 +180,20 @@ const TeamCard = ({ team, isViewOnly }: IProps) => {
         REPAIR TIME LEFT
       </p>
       <div className="flex justify-between items-center mb-4">
-        <p
-          className={cn(
-            "text-5xl w-full",
-            team.isTimerRunning || isViewOnly
-              ? "text-gray-700"
-              : "text-gray-400"
-          )}
-        >
+        <p className={cn("text-5xl w-full text-gray-700")}>
           {dayjs.duration(team.timeLeft, "s").format("mm:ss")}
         </p>
         {!isViewOnly && (
           <div className="flex space-x-4">
             <button
               className="h-10 aspect-square text-4xl rounded-sm bg-green-400"
-              onClick={() => addOrSubstractTimer(true)}
+              onClick={(e) => addOrSubstractTimer(e, true)}
             >
               +
             </button>
             <button
               className="h-10 aspect-square text-4xl rounded-sm bg-red-400"
-              onClick={() => addOrSubstractTimer(false)}
+              onClick={(e) => addOrSubstractTimer(e, false)}
             >
               -
             </button>

@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@fightbotics.com");
-  const [password, setPassword] = useState("fightbotics123");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
   const onLogin = (e: React.FormEvent) => {
     e.preventDefault();

@@ -7,10 +7,12 @@ import {
 } from "react-router-dom";
 import FightsPage from "./pages/FightsPage.tsx";
 import TeamsPage from "./pages/TeamsPage.tsx";
-import CompetitorPage from "./pages/CompetitorPage.tsx";
+import TeamLoginPage from "./pages/TeamLoginPage.tsx";
 import Admin from "./pages/AdminLoginPage.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
+import TeamPage from "./pages/TeamPage.tsx";
+import { TeamsProvider } from "./components/teams/TeamsProvider.tsx";
 // import LandingPage from "./pages/LandingPage.tsx";
 
 const router = createBrowserRouter([
@@ -20,9 +22,10 @@ const router = createBrowserRouter([
     errorElement: <Navigate to="/" />,
   },
   {
-    path: "/team",
-    element: <CompetitorPage />,
+    path: "/team/login",
+    element: <TeamLoginPage />,
   },
+  { path: "/team", element: <TeamPage /> },
   {
     path: "/fights",
     element: (
@@ -46,5 +49,7 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <RouterProvider router={router} />
+  <TeamsProvider>
+    <RouterProvider router={router} />
+  </TeamsProvider>
 );

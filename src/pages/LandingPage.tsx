@@ -1,27 +1,8 @@
-import { useEffect, useState } from "react";
-import { onValue, ref } from "firebase/database";
-import { database } from "../lib/firebase";
 import TeamCard from "../components/TeamCard";
-import { Team } from "./FightsPage";
+import { useTeams } from "../components/teams/TeamsProvider";
 
 const LandingPage = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
-
-  useEffect(() => {
-    async function fetchTeams() {
-      const teamsRef = ref(database, "teams");
-
-      onValue(teamsRef, (snapshot) => {
-        const data = snapshot.val();
-
-        if (data) {
-          setTeams(Object.values(data));
-        }
-      });
-    }
-
-    fetchTeams();
-  }, []);
+  const { teams } = useTeams();
 
   return (
     <div className="p-4 gap-8 flex flex-col">

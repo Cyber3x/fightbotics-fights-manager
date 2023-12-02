@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
-import { onValue, ref } from "firebase/database";
-import { database } from "../lib/firebase";
 import TeamCard from "../components/TeamCard";
 import { Link } from "react-router-dom";
+import { useTeams } from "../components/teams/TeamsProvider";
 
 export interface Team {
   name: string;
@@ -16,23 +14,7 @@ export interface Team {
 }
 
 const FightsPage = () => {
-  const [teams, setTeams] = useState<Team[]>([]);
-
-  useEffect(() => {
-    async function fetchData() {
-      const teamsRef = ref(database, "teams");
-
-      onValue(teamsRef, (snapshot) => {
-        const data = snapshot.val();
-
-        if (data) {
-          setTeams(Object.values(data));
-        }
-      });
-    }
-
-    fetchData();
-  }, []);
+  const { teams } = useTeams();
 
   return (
     <div className="p-8 gap-8 flex flex-col">
